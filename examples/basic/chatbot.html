@@ -1,279 +1,302 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Therapy Chatbot</title>
-  <style>
-    body {
-      background: #111; 
-      color: #eee; 
-      font-family: monospace;
-      padding: 20px;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    #chatbox {
-      height: 60vh;
-      overflow-y: auto;
-      border: 1px solid #333;
-      padding: 15px;
-      margin-bottom: 20px;
-      background: #1a1a1a;
-    }
-    .input-area {
-      display: flex;
-      gap: 10px;
-    }
-    input {
-      flex: 1;
-      padding: 12px;
-      font-size: 1rem;
-      background: #222;
-      color: #eee;
-      border: 1px solid #333;
-      border-radius: 4px;
-    }
-    button {
-      padding: 12px 24px;
-      font-size: 1rem;
-      background: #2a2a2a;
-      color: #eee;
-      border: 1px solid #444;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #333;
-    }
-    .message {
-      margin: 10px 0;
-      padding: 10px;
-      border-radius: 4px;
-    }
-    .user-message {
-      background: #223;
-      margin-left: 20%;
-      border-left: 4px solid #44f;
-    }
-    .bot-message {
-      background: #232;
-      margin-right: 20%;
-      border-left: 4px solid #4f4;
-    }
-    .system-message {
-      color: #888;
-      font-style: italic;
-      text-align: center;
-    }
-    .message-time {
-      font-size: 0.8rem;
-      color: #bbb;
-      margin-bottom: 5px;
-    }
-    .message-content {
-      font-size: 1rem;
-    }
-  </style>
-</head>
-<body>
-  <h2>Therapy Chatbot</h2>
-  <div id="chatbox"></div>
-  <div class="input-area">
-    <input id="inputText" value="patient Emotions?" placeholder="patient Emotions?" />
-    <button id="runLLM">Send</button>
-  </div>
-
-  <script type="module">
-    import { Wllama } from '../../esm/index.js';
-    import { therapyDialogue } from './therapyDialogue.js';
-
-    const CONFIG_PATHS = {
-      'single-thread/wllama.wasm': '../../esm/single-thread/wllama.wasm',
-      'multi-thread/wllama.wasm' : '../../esm/multi-thread/wllama.wasm',
-    };
-
-    const MODEL_FILE = 'http://127.0.0.1:5500/models/qwen.gguf';
-    const llm = new Wllama(CONFIG_PATHS);
-    const MAX_CONTEXT = 20000;
-    let chatHistory = [];
-    const chatbox = document.getElementById('chatbox');
-
-    const DEBUG = true;  // Toggle debugging
-
-    function logDebug(...args) {
-      if (DEBUG) {
-        console.log('[Debug]', ...args);
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
+    <title>Therapy Chatbot</title>
+    <style>
+      body {
+        background: #111;
+        color: #eee;
+        font-family: monospace;
+        padding: 20px;
+        max-width: 800px;
+        margin: 0 auto;
       }
-    }
-
-    // Update the addMessage function to include timestamp
-    function addMessage(content, type, timestamp = new Date()) {
-      const div = document.createElement('div');
-      div.className = `message ${type}-message`;
-      
-      // Add timestamp in a separate element
-      const timeDiv = document.createElement('div');
-      timeDiv.className = 'message-time';
-      timeDiv.textContent = timestamp.toLocaleTimeString();
-      div.appendChild(timeDiv);
-      
-      // Add message content
-      const contentDiv = document.createElement('div');
-      contentDiv.className = 'message-content';
-      contentDiv.textContent = content;
-      div.appendChild(contentDiv);
-      
-      chatbox.appendChild(div);
-      chatbox.scrollTop = chatbox.scrollHeight;
-    }
-
-    async function loadModel() {
-      try {
-        addMessage('Loading model...', 'system');
-        await llm.loadModelFromUrl(MODEL_FILE, {
-          n_ctx: MAX_CONTEXT
-        });
-
-        chatHistory = [{
-          role: 'system',
-          content: 'You are a helpful and empathetic therapist. Engage in conversation naturally, ' +
-            'drawing from the following therapy dialogue for context and style:\n' +
-            therapyDialogue
-        }];
-
-        console.log('Initial chat history:', chatHistory); // Debug log
-        
-        addMessage('Model loaded successfully. You can start chatting!', 'system');
-      } catch (err) {
-        console.error('❌ Model failed to load:', err);
-        addMessage('Failed to load model. Please try again later.', 'system');
+      #chatbox {
+        height: 60vh;
+        overflow-y: auto;
+        border: 1px solid #333;
+        padding: 15px;
+        margin-bottom: 20px;
+        background: #1a1a1a;
       }
-    }
+      .input-area {
+        display: flex;
+        gap: 10px;
+      }
+      input {
+        flex: 1;
+        padding: 12px;
+        font-size: 1rem;
+        background: #222;
+        color: #eee;
+        border: 1px solid #333;
+        border-radius: 4px;
+      }
+      button {
+        padding: 12px 24px;
+        font-size: 1rem;
+        background: #2a2a2a;
+        color: #eee;
+        border: 1px solid #444;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #333;
+      }
+      .message {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .user-message {
+        background: #223;
+        margin-left: 20%;
+        border-left: 4px solid #44f;
+      }
+      .bot-message {
+        background: #232;
+        margin-right: 20%;
+        border-left: 4px solid #4f4;
+      }
+      .system-message {
+        color: #888;
+        font-style: italic;
+        text-align: center;
+      }
+      .message-time {
+        font-size: 0.8rem;
+        color: #bbb;
+        margin-bottom: 5px;
+      }
+      .message-content {
+        font-size: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Therapy Chatbot</h2>
+    <div id="chatbox"></div>
+    <div class="input-area">
+      <input
+        id="inputText"
+        value="patient Emotions?"
+        placeholder="patient Emotions?"
+      />
+      <button id="runLLM">Send</button>
+    </div>
 
-    const input = document.getElementById('inputText');
-    const button = document.getElementById('runLLM');
-    const USE_STREAMING = false; // Flag to control streaming behavior
+    <script type="module">
+      import { Wllama } from '../../esm/index.js';
+      import { therapyDialogue } from './therapyDialogue.js';
 
-    // Update the handleChat function to include timing
-    async function handleChat() {
-      const userInput = input.value.trim();
-      if (!userInput) return;
+      const CONFIG_PATHS = {
+        'single-thread/wllama.wasm': '../../esm/single-thread/wllama.wasm',
+        'multi-thread/wllama.wasm': '../../esm/multi-thread/wllama.wasm',
+      };
 
-      const startTime = new Date();
-      addMessage(userInput, 'user', startTime);
-      input.value = '';
-      input.disabled = true;
-      button.disabled = true;
-
-      chatHistory.push({
-        role: 'user',
-        content: userInput
+      const MODEL_FILE = 'http://127.0.0.1:5500/models/qwen.gguf';
+      const llm = new Wllama(CONFIG_PATHS, {
+        useMultithread: true, // Explicitly disable multi-threading
       });
+      const MAX_CONTEXT = 20000;
+      let chatHistory = [];
+      const chatbox = document.getElementById('chatbox');
 
-      try {
-        let response = '';
-        const responseDiv = document.createElement('div');
-        responseDiv.className = 'message bot-message';
+      const DEBUG = true; // Toggle debugging
+
+      function logDebug(...args) {
+        if (DEBUG) {
+          console.log('[Debug]', ...args);
+        }
+      }
+
+      // Update the addMessage function to include timestamp
+      function addMessage(content, type, timestamp = new Date()) {
+        const div = document.createElement('div');
+        div.className = `message ${type}-message`;
+
+        // Add timestamp in a separate element
         const timeDiv = document.createElement('div');
         timeDiv.className = 'message-time';
-        responseDiv.appendChild(timeDiv);
+        timeDiv.textContent = timestamp.toLocaleTimeString();
+        div.appendChild(timeDiv);
+
+        // Add message content
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
-        responseDiv.appendChild(contentDiv);
-        chatbox.appendChild(responseDiv);
+        contentDiv.textContent = content;
+        div.appendChild(contentDiv);
 
-        if (USE_STREAMING) {
-          // Streaming mode
-          const streamStartTime = new Date();
-          timeDiv.textContent = streamStartTime.toLocaleTimeString();
-          
-          const stream = await llm.createChatCompletion(chatHistory, {
-            stream: true,
-            nPredict: 200,
-            sampling: {
-              temp: 0.7,
-              top_k: 40,
-              top_p: 0.95
-            }
-          });
-
-          for await (const chunk of stream) {
-            const token = typeof chunk === 'string' ? chunk : chunk.content;
-            if (token) {
-              response += token;
-              contentDiv.textContent = response;
-              chatbox.scrollTop = chatbox.scrollHeight;
-            }
-          }
-          
-          const duration = (new Date() - streamStartTime) / 1000;
-          timeDiv.textContent += ` (${duration.toFixed(1)}s)`;
-        } else {
-          // Non-streaming mode
-          const nonStreamStartTime = new Date();
-          timeDiv.textContent = nonStreamStartTime.toLocaleTimeString();
-          
-          logDebug('Sending chat history:', chatHistory);
-          
-          const result = await llm.createChatCompletion(chatHistory, {
-            stream: false,
-            nPredict: 200,
-            sampling: {
-              temp: 0.7,
-              top_k: 40,
-              top_p: 0.95
-            }
-          });
-          
-          logDebug('Received result:', result);
-          
-          // Handle both string and object responses
-          response = typeof result === 'string' ? result : result.content || result.choices?.[0]?.message?.content || result;
-          
-          if (!response) {
-            console.error('Empty response from model:', result);
-            response = 'Error: Empty response from model';
-          }
-          
-          contentDiv.textContent = response;
-          const duration = (new Date() - nonStreamStartTime) / 1000;
-          timeDiv.textContent += ` (${duration.toFixed(1)}s)`;
-          chatbox.scrollTop = chatbox.scrollHeight;
-        }
-
-        chatHistory.push({
-          role: 'assistant',
-          content: response
-        });
-      } catch (err) {
-        console.error('❌ Generation failed:', err);
-        logDebug('Error details:', {
-          chatHistory,
-          modelConfig: {
-            stream: false,
-            nPredict: 200,
-            sampling: {
-              temp: 0.7,
-              top_k: 40,
-              top_p: 0.95
-            }
-          }
-        });
-        addMessage(`Failed to generate response: ${err.message}`, 'system', new Date());
+        chatbox.appendChild(div);
+        chatbox.scrollTop = chatbox.scrollHeight;
       }
 
-      input.disabled = false;
-      button.disabled = false;
-      input.focus();
-    }
+      async function loadModel() {
+        try {
+          addMessage('Loading model...', 'system');
+          await llm.loadModelFromUrl(MODEL_FILE, {
+            n_ctx: MAX_CONTEXT,
+          });
 
-    button.onclick = handleChat;
-    input.onkeypress = (e) => {
-      if (e.key === 'Enter') handleChat();
-    };
+          chatHistory = [
+            {
+              role: 'system',
+              content:
+                'You are a helpful and empathetic therapist. Engage in conversation naturally, ' +
+                'drawing from the following therapy dialogue for context and style:\n' +
+                therapyDialogue,
+            },
+          ];
 
-    loadModel();
-  </script>
-</body>
+          console.log('Initial chat history:', chatHistory); // Debug log
+
+          addMessage(
+            'Model loaded successfully. You can start chatting!',
+            'system'
+          );
+        } catch (err) {
+          console.error('❌ Model failed to load:', err);
+          addMessage('Failed to load model. Please try again later.', 'system');
+        }
+      }
+
+      const input = document.getElementById('inputText');
+      const button = document.getElementById('runLLM');
+      const USE_STREAMING = false; // Flag to control streaming behavior
+
+      // Update the handleChat function to include timing
+      async function handleChat() {
+        const userInput = input.value.trim();
+        if (!userInput) return;
+
+        const startTime = new Date();
+        addMessage(userInput, 'user', startTime);
+        input.value = '';
+        input.disabled = true;
+        button.disabled = true;
+
+        chatHistory.push({
+          role: 'user',
+          content: userInput,
+        });
+
+        try {
+          let response = '';
+          const responseDiv = document.createElement('div');
+          responseDiv.className = 'message bot-message';
+          const timeDiv = document.createElement('div');
+          timeDiv.className = 'message-time';
+          responseDiv.appendChild(timeDiv);
+          const contentDiv = document.createElement('div');
+          contentDiv.className = 'message-content';
+          responseDiv.appendChild(contentDiv);
+          chatbox.appendChild(responseDiv);
+
+          if (USE_STREAMING) {
+            // Streaming mode
+            const streamStartTime = new Date();
+            timeDiv.textContent = streamStartTime.toLocaleTimeString();
+
+            const stream = await llm.createChatCompletion(chatHistory, {
+              stream: true,
+              nPredict: 200,
+              sampling: {
+                temp: 0.7,
+                top_k: 40,
+                top_p: 0.95,
+              },
+            });
+
+            for await (const chunk of stream) {
+              const token = typeof chunk === 'string' ? chunk : chunk.content;
+              if (token) {
+                response += token;
+                contentDiv.textContent = response;
+                chatbox.scrollTop = chatbox.scrollHeight;
+              }
+            }
+
+            const duration = (new Date() - streamStartTime) / 1000;
+            timeDiv.textContent += ` (${duration.toFixed(1)}s)`;
+          } else {
+            // Non-streaming mode
+            const nonStreamStartTime = new Date();
+            timeDiv.textContent = nonStreamStartTime.toLocaleTimeString();
+
+            logDebug('Sending chat history:', chatHistory);
+
+            const result = await llm.createChatCompletion(chatHistory, {
+              stream: false,
+              nPredict: 200,
+              sampling: {
+                temp: 0.7,
+                top_k: 40,
+                top_p: 0.95,
+              },
+            });
+
+            logDebug('Received result:', result);
+
+            // Handle both string and object responses
+            response =
+              typeof result === 'string'
+                ? result
+                : result.content ||
+                  result.choices?.[0]?.message?.content ||
+                  result;
+
+            if (!response) {
+              console.error('Empty response from model:', result);
+              response = 'Error: Empty response from model';
+            }
+
+            contentDiv.textContent = response;
+            const duration = (new Date() - nonStreamStartTime) / 1000;
+            timeDiv.textContent += ` (${duration.toFixed(1)}s)`;
+            chatbox.scrollTop = chatbox.scrollHeight;
+          }
+
+          chatHistory.push({
+            role: 'assistant',
+            content: response,
+          });
+        } catch (err) {
+          console.error('❌ Generation failed:', err);
+          logDebug('Error details:', {
+            chatHistory,
+            modelConfig: {
+              stream: false,
+              nPredict: 200,
+              sampling: {
+                temp: 0.7,
+                top_k: 40,
+                top_p: 0.95,
+              },
+            },
+          });
+          addMessage(
+            `Failed to generate response: ${err.message}`,
+            'system',
+            new Date()
+          );
+        }
+
+        input.disabled = false;
+        button.disabled = false;
+        input.focus();
+      }
+
+      button.onclick = handleChat;
+      input.onkeypress = (e) => {
+        if (e.key === 'Enter') handleChat();
+      };
+
+      loadModel();
+    </script>
+  </body>
 </html>
