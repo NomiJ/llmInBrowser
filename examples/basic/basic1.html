@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LLM Therapy Suggestions</title>
+  <style>
+    body {
+      background: #111; color: #eee; font-family: monospace;
+      padding: 20px;
+    }
+    input, button {
+      padding: 8px;
+      font-size: 1rem;
+      margin: 5px;
+    }
+    .suggestion {
+      margin: 10px 0;
+      padding: 10px;
+      background: #222;
+      border-left: 4px solid #555;
+    }
+  </style>
+</head>
+<body>
+  <h2>Therapy Dialogue Suggestions</h2>
+  <input id="inputText" placeholder="emotions" value="emotions" size="60"/>
+  <button id="runLLM">Get Suggestions</button>
+  <div id="output"></div>
+
+  <script type="module">
+    import { Wllama } from '../../esm/index.js';
+    import { therapyDialogue } from './therapyDialogue.js';
+
+    const CONFIG_PATHS = {
+      'single-thread/wllama.wasm': '../../esm/single-thread/wllama.wasm',
+      'multi-thread/wllama.wasm' : '../../esm/multi-thread/wllama.wasm',
+    };
+
+
+const MODEL_FILE = 'http://127.0.0.1:5500/models/qwen.gguf'; // Change to your model file path
+
+    const llm = new Wllama(CONFIG_PATHS);
+    const MAX_CONTEXT = 20000; // Match model's training context length
+
+    let chatHistory = [];
+
+    async function loadModel() {
+      try {
+    await llm.loadModelFromUrl(MODEL_FILE,  {
+          n_ctx: MAX_CONTEXT // Set larger context window
+        }); // Changed to loadModel
+
+        // Initialize chat history with system message
+    chatHistory = [{
+      role: 'system',
+      content: 'I will provide you a therapy dialogue between a psychologist and a patient.\n' +
+        'When I type a partial sentence, you should look into the dialogue and find up to three full or partial sentences ' +
+        'that could reasonably complete my input. These should be suggestions drawn directly or closely from the therapy dialogue, ' +
+        'not invented. Aim to match context, tone, and emotional relevance.\n\n' +
+        'Therapy Dialogue:\n' + therapyDialogue + '\n\n'
+    }];
+    
+        console.log('✅ Model loaded successfully');
+        document.body.insertAdjacentHTML('beforeend', '<p>Model is ready.</p>');
+      } catch (err) {
+        console.error('❌ Model failed to load:', err);
+        document.body.insertAdjacentHTML('beforeend', '<p style="color:red;">Failed to load model.</p>');
+      }
+    }
+
+
+    const input = document.getElementById('inputText');
+    const button = document.getElementById('runLLM');
+    const output = document.getElementById('output');
+
+
+    // Replace the button click handler
+    button.onclick = async () => {
+      output.innerHTML = '';
+      const userInput = input.value.trim();
+      if (!userInput) return;
+
+      // Add user message to chat history
+      chatHistory.push({
+        role: 'user',
+        content: userInput
+      });
+
+      try {
+        let fullResponse = '';
+        const stream = await llm.createChatCompletion(chatHistory, {
+          stream: true, // Enable streaming
+          nPredict: 100,
+          sampling: {
+            temp: 0.7,
+            top_k: 40,
+            top_p: 0.95
+          }
+        });
+
+        // Handle the stream of tokens
+        for await (const chunk of stream) {
+          fullResponse += chunk.choices[0]?.delta?.content || '';
+          output.innerHTML = `<div class="suggestion">${fullResponse}</div>`;
+        }
+
+        // Add assistant's response to chat history
+        chatHistory.push({
+          role: 'assistant',
+          content: fullResponse
+        });
+
+        input.value = ''; // Clear input field
+      } catch (err) {
+        console.error('❌ Generation failed:', err);
+        output.innerHTML = '<div class="suggestion" style="color:red;">Failed to generate response</div>';
+      }
+    };
+
+    // Initialize context after model loads
+    loadModel().then(() => {
+    });
+  </script>
+</body>
+</html>
